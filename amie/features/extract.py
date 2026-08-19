@@ -151,6 +151,7 @@ def extract_market(cid: str) -> pd.DataFrame | None:
             "imbalance_z": causal_z(pd.Series(imb, index=hours)),
             "gapvar_z": causal_z(pd.Series(gapvar, index=hours)),
             "netflow_z": causal_z(netflow),
+            "netflow_all_z": causal_z(netflow_all),
             "netflow_sign": direction,
         }
     ).reset_index(drop=True)

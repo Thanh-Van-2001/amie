@@ -22,7 +22,7 @@ TAG_SLUGS = ["geopolitics", "economy", "crypto", "business", "politics", "world"
              "science", "weather", "finance", "earnings", "ai"]
 
 
-def fetch_events(closed: bool, max_pages_per_tag: int = 4) -> list[dict]:
+def fetch_events(closed: bool, max_pages_per_tag: int = 10) -> list[dict]:
     events, seen, limit = [], set(), 25
     cutoff = datetime.now(timezone.utc) - timedelta(days=U["lookback_days"])
     for tag in TAG_SLUGS:
