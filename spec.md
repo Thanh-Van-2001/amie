@@ -66,6 +66,27 @@ whale study run only if data supports them; same thresholds.
 - KILL: nothing beats its twin, or edges die at lag-1, or effect
   concentrates in < 5 events.
 
+## Amendment A — pre-test audit fixes (2026-08-19, test set still untouched)
+
+An independent 3-lens audit (lookahead / statistics / code) of the harness ran
+BEFORE the locked test run. All fixes below were applied and frozen before any
+test-set execution; train-set results were regenerated:
+
+1. Smart flags: markets must RESOLVE before the boundary (not just trades
+   truncated); boundary argument now required.
+2. All hourly/5-min resamples right-labeled — a feature stamped t uses only
+   trades <= t (was label-left: up to 60 min of future trades).
+3. External bars unified to (ts = bar open, px = open price, executable AT ts);
+   Binance klines were close-labeled, making crypto "lag-1" a same-hour fill.
+4. Signed direction = smart 6h flow sign, falling back to all-wallet flow when
+   smart flow is exactly zero; direction-0 events dropped (was: default +1,
+   69% of rows — a disguised drift bet).
+5. Unsigned baseline = deterministic unconditional mean |r| over the SPLIT's
+   own window (was: one random draw per event from the full 2-year history).
+6. Bootstrap blocks scale with horizon (ceil(h/24)+1 days); diff-t uses a
+   JOINT block bootstrap preserving acoustic-twin covariance.
+7. n >= 40 now enforced as a `testable` column in the results table.
+
 ## Known limitations (declared up front)
 
 - Trades ingestion capped at max_trades_pages_per_market (config) — the cap

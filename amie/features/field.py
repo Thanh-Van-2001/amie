@@ -41,7 +41,7 @@ def synthesize(trades: pd.DataFrame, smart: set[str] | None = None) -> pd.DataFr
     t0 = trades["ts"].min().floor("1min")
     t1 = trades["ts"].max().ceil("1min")
     grid = pd.date_range(t0, t1, freq=f"{GRID_S}s", tz="UTC")
-    gsec = grid.view("int64") / 1e9
+    gsec = grid.astype("int64") / 1e9
 
     re = np.zeros(len(grid))
     im = np.zeros(len(grid))
@@ -49,7 +49,7 @@ def synthesize(trades: pd.DataFrame, smart: set[str] | None = None) -> pd.DataFr
     im_s = np.zeros(len(grid))
     n_active = np.zeros(len(grid), dtype=np.int32)
 
-    tsec = trades["ts"].view("int64").to_numpy() / 1e9
+    tsec = trades["ts"].astype("int64").to_numpy() / 1e9
     amp = np.log1p(trades["size_usdc"].to_numpy())
     freq = np.array([trade_frequency(o, s) for o, s in zip(trades["outcome"], trades["side"])])
     wallets = trades["wallet"].to_numpy()

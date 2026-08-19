@@ -19,10 +19,19 @@ from amie.common import DATA_DIR
 TRADES_DIR = DATA_DIR / "trades"
 
 
-def market_payouts(uni: pd.DataFrame) -> dict[str, tuple[float, float]]:
-    """condition_id -> (yes_payout, no_payout) for resolved markets."""
+def market_payouts(uni: pd.DataFrame, boundary: pd.Timestamp | None) -> dict[str, tuple[float, float]]:
+    """condition_id -> (yes_payout, no_payout) for markets RESOLVED before boundary.
+
+    Audit fix: filtering trades alone is not point-in-time — a market that
+    resolves inside the test window still leaks its outcome into the flag.
+    Only markets whose end_date precedes the boundary may contribute.
+    """
     out = {}
     for _, r in uni[uni["closed"]].iterrows():
+        if boundary is not None:
+            end = pd.to_datetime(r["end_date"], errors="coerce", utc=True)
+            if pd.isna(end) or end > boundary:
+                continue
         try:
             prices = json.loads(r["resolved_outcome"]) if r["resolved_outcome"] else None
         except (json.JSONDecodeError, TypeError):
@@ -50,10 +59,12 @@ def wallet_pnl_for_market(trades: pd.DataFrame, yes_pay: float, no_pay: float,
     return g.reset_index()
 
 
-def main(boundary_iso: str | None = None):
+def main(boundary_iso: str):
+    if not boundary_iso:
+        raise SystemExit("boundary date is required: python -m amie.ingest.score_wallets 2026-05-20")
     uni = pd.read_parquet(DATA_DIR / "universe.parquet")
-    payouts = market_payouts(uni)
-    boundary = pd.Timestamp(boundary_iso, tz="UTC") if boundary_iso else None
+    boundary = pd.Timestamp(boundary_iso, tz="UTC")
+    payouts = market_payouts(uni, boundary)
     frames = []
     for cid, (yp, np_) in payouts.items():
         f = TRADES_DIR / f"{cid}.parquet"
@@ -88,4 +99,4 @@ def main(boundary_iso: str | None = None):
 if __name__ == "__main__":
     import sys
 
-    main(sys.argv[1] if len(sys.argv) > 1 else None)
+    main(sys.argv[1] if len(sys.argv) > 1 else "")

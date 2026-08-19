@@ -19,6 +19,10 @@ ETF_TICKERS = ["SPY", "TLT", "GLD", "USO", "UNG", "UUP", "NVDA", "TSLA", "AAPL",
 CRYPTO_TICKERS = ["BTCUSDT", "ETHUSDT"]
 
 
+# Uniform convention (audit fix): every row is (ts, px) where px is the bar's
+# OPEN price — executable AT ts. Binance klines are close-labeled by default;
+# we use open time b[0] + open price b[1] instead, so "first bar strictly
+# after event t" is a genuinely future, tradeable price on every instrument.
 def pull_yf(ticker: str) -> pd.DataFrame:
     import yfinance as yf
 
@@ -27,13 +31,13 @@ def pull_yf(ticker: str) -> pd.DataFrame:
         return pd.DataFrame()
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = df.columns.get_level_values(0)
-    out = df.reset_index()[["Datetime", "Close"]].rename(columns={"Datetime": "ts", "Close": "close"})
+    out = df.reset_index()[["Datetime", "Open"]].rename(columns={"Datetime": "ts", "Open": "px"})
     out["ts"] = pd.to_datetime(out["ts"], utc=True)
     return out
 
 
 def pull_binance(symbol: str, days: int = 730) -> pd.DataFrame:
-    """Hourly klines, paginated 1000 bars per call."""
+    """Hourly klines, paginated 1000 bars per call. Open-labeled, open price."""
     end = int(time.time() * 1000)
     start = end - days * 86400_000
     rows = []
@@ -50,8 +54,8 @@ def pull_binance(symbol: str, days: int = 730) -> pd.DataFrame:
         rows.extend(batch)
         start = batch[-1][6] + 1
         time.sleep(0.15)
-    df = pd.DataFrame({"ts": pd.to_datetime([b[6] for b in rows], unit="ms", utc=True),
-                       "close": [float(b[4]) for b in rows]})
+    df = pd.DataFrame({"ts": pd.to_datetime([b[0] for b in rows], unit="ms", utc=True),
+                       "px": [float(b[1]) for b in rows]})
     return df
 
 

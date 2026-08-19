@@ -72,7 +72,9 @@ def extract_market(cid: str) -> pd.DataFrame | None:
         return None
 
     # --- F1 loudness: hourly RMS of |s| ---
-    rms = mag.resample("1h").apply(lambda w: np.sqrt(np.mean(w**2)) if len(w) else np.nan).reindex(hours)
+    # audit fix: label/closed='right' so the value stamped t covers (t-1h, t]
+    rms = (mag.resample("1h", closed="right", label="right")
+           .apply(lambda w: np.sqrt(np.mean(w**2)) if len(w) else np.nan).reindex(hours))
 
     # --- F2 dissonance: band envelopes at hourly points ---
     is_yes = trades["outcome"].str.strip().str.lower().isin(["yes", "up"])
@@ -87,7 +89,7 @@ def extract_market(cid: str) -> pd.DataFrame | None:
     dis = np.where(tot > 0, np.minimum(a_yes, a_no) * a_yes * a_no / np.maximum(tot, 1e-9) ** 2, np.nan)
 
     # --- F3 rhythmic entropy + B3 gap variance (6h trailing) ---
-    counts_5m = trades.set_index("ts")["size_usdc"].resample("5min").count()
+    counts_5m = trades.set_index("ts")["size_usdc"].resample("5min", closed="right", label="right").count()
     ent, gapvar = [], []
     ts_sorted = trades["ts"].sort_values().astype("int64").to_numpy() / 1e9
     for h in hours:
@@ -113,9 +115,9 @@ def extract_market(cid: str) -> pd.DataFrame | None:
         cent.append(spectral_centroid(z[m]))
     cent = pd.Series(cent, index=hours)
 
-    # --- baselines ---
-    hourly = trades.set_index("ts").resample("1h")
-    vol = hourly["size_usdc"].sum().reindex(hours)
+    # --- baselines --- (all right-labeled: stamp t covers (t-1h, t])
+    RS = {"closed": "right", "label": "right"}
+    vol = trades.set_index("ts")["size_usdc"].resample("1h", **RS).sum().reindex(hours)
     t2 = trades.copy()
     t2["signed"] = np.where(yes_exp, 1.0, -1.0) * t2["size_usdc"]
     smart_wallets = set()
@@ -124,11 +126,17 @@ def extract_market(cid: str) -> pd.DataFrame | None:
         w = pd.read_parquet(ws)
         smart_wallets = set(w.loc[w["smart_flag"], "wallet"])
     t_sm = t2[t2["wallet"].isin(smart_wallets)] if smart_wallets else t2
-    netflow = t_sm.set_index("ts")["signed"].resample("1h").sum().reindex(hours).fillna(0)
-    v_yes = t2[yes_exp.to_numpy()].set_index("ts")["size_usdc"].resample("1h").sum().reindex(hours).fillna(0)
-    v_no = t2[~yes_exp.to_numpy()].set_index("ts")["size_usdc"].resample("1h").sum().reindex(hours).fillna(0)
+    netflow = t_sm.set_index("ts")["signed"].resample("1h", **RS).sum().reindex(hours).fillna(0)
+    netflow_all = t2.set_index("ts")["signed"].resample("1h", **RS).sum().reindex(hours).fillna(0)
+    v_yes = t2[yes_exp.to_numpy()].set_index("ts")["size_usdc"].resample("1h", **RS).sum().reindex(hours).fillna(0)
+    v_no = t2[~yes_exp.to_numpy()].set_index("ts")["size_usdc"].resample("1h", **RS).sum().reindex(hours).fillna(0)
     vt = v_yes + v_no
     imb = np.where(vt > 0, np.minimum(v_yes, v_no) * v_yes * v_no / np.maximum(vt, 1e-9) ** 2, np.nan)
+    # direction: smart 6h flow sign, falling back to all-wallet flow when the
+    # smart flow is exactly zero (69% of hours) — pre-registered amendment A
+    sign_sm = np.sign(netflow.rolling(6, min_periods=1).sum())
+    sign_all = np.sign(netflow_all.rolling(6, min_periods=1).sum())
+    direction = np.where(sign_sm != 0, sign_sm, sign_all)
 
     df = pd.DataFrame(
         {
@@ -143,7 +151,7 @@ def extract_market(cid: str) -> pd.DataFrame | None:
             "imbalance_z": causal_z(pd.Series(imb, index=hours)),
             "gapvar_z": causal_z(pd.Series(gapvar, index=hours)),
             "netflow_z": causal_z(netflow),
-            "netflow_sign": np.sign(netflow.rolling(6, min_periods=1).sum()),
+            "netflow_sign": direction,
         }
     ).reset_index(drop=True)
     return df
