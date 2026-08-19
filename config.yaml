@@ -1,0 +1,110 @@
+# AMIE sprint config — frozen decisions live here, not in code.
+api:
+  gamma: https://gamma-api.polymarket.com
+  data: https://data-api.polymarket.com
+  clob: https://clob.polymarket.com
+
+universe:
+  min_volume_usd: 50000
+  lookback_days: 120
+  max_live_markets: 20
+  max_resolved_markets: 40
+  # Vision filter: only markets that can lead LIQUID external markets
+  # (futures, equities, commodities, FX, rates). Sports/culture/mentions are noise.
+  include_keywords:
+    - geopolit
+    - econom
+    - macro
+    - fed
+    - "rate cut"
+    - "rate hike"
+    - fomc
+    - inflation
+    - cpi
+    - gdp
+    - recession
+    - tariff
+    - "trade deal"
+    - "trade war"
+    - oil
+    - opec
+    - gold
+    - treasury
+    - "debt ceiling"
+    - shutdown
+    - jobs
+    - unemployment
+    - payroll
+    - earnings
+    - "stock"
+    - s&p
+    - nasdaq
+    - nvidia
+    - tesla
+    - apple
+    - microsoft
+    - openai
+    - war
+    - ukraine
+    - russia
+    - china
+    - taiwan
+    - iran
+    - israel
+    - sanction
+    - nuclear
+    - hurricane
+    - "natural gas"
+    - bitcoin
+    - ethereum
+    - etf
+    - sec
+  exclude_keywords:
+    - sport
+    - esport
+    - nba
+    - nfl
+    - nhl
+    - mlb
+    - ufc
+    - soccer
+    - football
+    - basketball
+    - baseball
+    - tennis
+    - golf
+    - f1
+    - olympic
+    - chess
+    - boxing
+    - mention
+    - tweet
+    - "say "
+    - celebrity
+    - music
+    - album
+    - movie
+    - "box office"
+    - oscar
+    - grammy
+    - "tv show"
+    - gaming
+    - "video game"
+    - gta
+    - eurovision
+    - "time person"
+    - pope
+    - royal
+    - kardashian
+    - "love island"
+
+ingest:
+  trades_page_size: 500
+  max_trades_pages_per_market: 200   # 100k trades cap per market
+  price_fidelity_minutes: 60
+  request_timeout_s: 30
+  retry_attempts: 4
+  retry_backoff_s: 2
+
+paths:
+  data_dir: data
