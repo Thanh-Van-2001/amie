@@ -41,7 +41,7 @@ def synthesize(trades: pd.DataFrame, smart: set[str] | None = None) -> pd.DataFr
     t0 = trades["ts"].min().floor("1min")
     t1 = trades["ts"].max().ceil("1min")
     grid = pd.date_range(t0, t1, freq=f"{GRID_S}s", tz="UTC")
-    gsec = grid.astype("int64") / 1e9
+    gsec = grid.astype("int64").to_numpy() / 1e9
 
     re = np.zeros(len(grid))
     im = np.zeros(len(grid))
