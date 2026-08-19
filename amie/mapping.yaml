@@ -2,31 +2,43 @@
 # The outcome variable of every validation test is the forward return of the
 # mapped instrument, not the Polymarket token. Free hourly data: yfinance
 # (equities/ETF proxies for futures) + Binance klines (crypto).
+# yes_sign convention (pre-registered): +1 means "YES resolving more likely
+# -> instrument up". For macro/geopolitics themes the YES side is, by
+# Polymarket convention, usually the adverse/risk-off outcome (war escalates,
+# shutdown happens, recession called) — hence SPY -1 there. Imperfect per
+# market wording; declared here, frozen in spec.md, never tuned on results.
 themes:
   fed_rates:
     match: [fed, fomc, "rate cut", "rate hike", powell]
     instruments: [TLT, SPY, UUP]        # rates -> bonds, equities, dollar
+    yes_sign: {TLT: 1, SPY: 1, UUP: -1} # YES on "cut" = easing = bonds/stocks up
   inflation_macro:
     match: [cpi, inflation, gdp, recession, jobs, unemployment, payroll]
     instruments: [SPY, TLT, GLD]
+    yes_sign: {SPY: -1, TLT: 1, GLD: 1} # YES = adverse macro print
   fiscal_politics:
     match: [shutdown, "debt ceiling", tariff, "trade deal", "trade war", election]
-    instruments: [SPY, UUP, GLD]
+    instruments: [SPY, GLD, UUP]
+    yes_sign: {SPY: -1, GLD: 1, UUP: -1}
   geopolitics_war:
     match: [war, ukraine, russia, iran, israel, taiwan, china, sanction, nuclear, strike]
     instruments: [USO, GLD, SPY]        # conflict -> oil, gold, risk-off
+    yes_sign: {USO: 1, GLD: 1, SPY: -1}
   energy:
     match: [oil, opec, "natural gas"]
     instruments: [USO, UNG]
+    yes_sign: {USO: 1, UNG: 1}          # YES = supply disruption / cut
   weather:
     match: [hurricane, storm, temperature, climate]
-    instruments: [UNG, "corn: CORN"]
+    instruments: [UNG]
+    yes_sign: {UNG: 1}                  # YES = disruptive weather event
   earnings_single_stock:
     match: [earnings, nvidia, tesla, apple, microsoft, amazon, google, meta, openai]
-    instruments: [BY_COMPANY]           # resolve to the named ticker
+    instruments: [BY_COMPANY]           # resolve to the named ticker; YES = beat
   crypto:
     match: [bitcoin, ethereum, etf, sec, solana]
-    instruments: [BTCUSDT, ETHUSDT]     # Binance klines, true 24/7 futures
+    instruments: [BTCUSDT, ETHUSDT]     # Binance klines, true 24/7 markets
+    yes_sign: {BTCUSDT: 1, ETHUSDT: 1}  # YES = bullish catalyst / target hit
 
 company_tickers:
   nvidia: NVDA

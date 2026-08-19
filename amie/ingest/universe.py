@@ -16,25 +16,38 @@ GAMMA = CONFIG["api"]["gamma"]
 U = CONFIG["universe"]
 
 
-def fetch_events(closed: bool, max_pages: int = 30) -> list[dict]:
-    events, limit = [], 100
-    for page in range(max_pages):
-        batch = get_json(
-            f"{GAMMA}/events",
-            {
+# Gamma event payloads are heavy (~300 KB each), so query by relevant tag with
+# small pages instead of paging the whole exchange.
+TAG_SLUGS = ["geopolitics", "economy", "crypto", "business", "politics", "world",
+             "science", "weather", "finance", "earnings", "ai"]
+
+
+def fetch_events(closed: bool, max_pages_per_tag: int = 4) -> list[dict]:
+    events, seen, limit = [], set(), 25
+    cutoff = datetime.now(timezone.utc) - timedelta(days=U["lookback_days"])
+    for tag in TAG_SLUGS:
+        for page in range(max_pages_per_tag):
+            params = {
                 "limit": limit,
                 "offset": page * limit,
                 "closed": str(closed).lower(),
                 "order": "volume",
                 "ascending": "false",
-            },
-        )
-        if not batch:
-            break
-        events.extend(batch)
-        # volume-sorted: once a full page is below threshold, stop paging
-        if all(float(e.get("volume") or 0) < U["min_volume_usd"] for e in batch):
-            break
+                "tag_slug": tag,
+            }
+            if closed:
+                # server-side filter: only events that ended inside the lookback
+                params["end_date_min"] = cutoff.strftime("%Y-%m-%dT%H:%M:%SZ")
+            batch = get_json(f"{GAMMA}/events", params)
+            if not batch:
+                break
+            fresh = [e for e in batch if e.get("id") not in seen]
+            seen.update(e.get("id") for e in fresh)
+            events.extend(fresh)
+            print(f"  tag={tag} page={page + 1}: +{len(fresh)} events (closed={closed})", flush=True)
+            # volume-sorted: once a full page is below threshold, next tag
+            if all(float(e.get("volume") or 0) < U["min_volume_usd"] for e in batch):
+                break
     return events
 
 
