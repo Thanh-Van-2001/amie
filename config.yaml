@@ -100,7 +100,7 @@ universe:
 
 ingest:
   trades_page_size: 500
-  max_trades_pages_per_market: 200   # 100k trades cap per market
+  max_trades_pages_per_market: 40    # 20k trades cap per market (fill rate logged per market in ingest_log.json — never silent)
   price_fidelity_minutes: 60
   request_timeout_s: 30
   retry_attempts: 4
