@@ -18,17 +18,23 @@ LOG_PATH = DATA_DIR / "ingest_log.json"
 
 def fetch_trades(condition_id: str) -> pd.DataFrame:
     cfg = CONFIG["ingest"]
+    # data-api rejects offset > 10000, so >=10k-trade markets are capped at the
+    # most recent ~10k trades; the fill rate vs Gamma volume is logged per market.
+    max_pages = min(cfg["max_trades_pages_per_market"], 10_000 // cfg["trades_page_size"])
     rows = []
-    for page in range(cfg["max_trades_pages_per_market"]):
-        batch = get_json(
-            f"{DATA_API}/trades",
-            {
-                "market": condition_id,
-                "limit": cfg["trades_page_size"],
-                "offset": page * cfg["trades_page_size"],
-                "takerOnly": "true",
-            },
-        )
+    for page in range(max_pages + 1):
+        try:
+            batch = get_json(
+                f"{DATA_API}/trades",
+                {
+                    "market": condition_id,
+                    "limit": cfg["trades_page_size"],
+                    "offset": page * cfg["trades_page_size"],
+                    "takerOnly": "true",
+                },
+            )
+        except RuntimeError:
+            break  # offset cap or transient hard failure — keep what we have
         if not batch:
             break
         rows.extend(batch)
