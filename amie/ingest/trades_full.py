@@ -20,21 +20,27 @@ OUT.mkdir(exist_ok=True)
 PAGE = 10_000
 
 
-def fetch_window(cid: str, t0: int, t1: int, depth: int = 0) -> list[dict]:
-    if t1 <= t0 or depth > 24:
-        return []
-    try:
-        rows = get_json(
-            f"{DATA_API}/trades",
-            {"market": cid, "limit": PAGE, "takerOnly": "true", "start": t0, "end": t1},
-        ) or []
-    except RuntimeError as e:
-        print(f"    window {t0}-{t1} failed: {e}")
-        return []
-    if len(rows) < PAGE:
-        return rows
-    mid = (t0 + t1) // 2
-    return fetch_window(cid, t0, mid, depth + 1) + fetch_window(cid, mid, t1, depth + 1)
+def fetch_window(cid: str, t0: int, t1: int) -> list[dict]:
+    """Cursor-walk backwards: every call yields up to 10k usable rows
+    (requests ~= total/10k, no bisection waste). Rows come newest-first;
+    the batch's min timestamp becomes the next window end (1s overlap,
+    deduped later)."""
+    rows, end = [], t1
+    while end > t0:
+        try:
+            batch = get_json(
+                f"{DATA_API}/trades",
+                {"market": cid, "limit": PAGE, "takerOnly": "true", "start": t0, "end": end},
+            ) or []
+        except RuntimeError as e:
+            print(f"    window {t0}-{end} failed: {e}")
+            break
+        rows.extend(batch)
+        if len(batch) < PAGE:
+            break
+        ts_min = min(int(b.get("timestamp") or 0) for b in batch)
+        end = ts_min if ts_min < end else end - 1
+    return rows
 
 
 def to_frame(rows: list[dict], cid: str) -> pd.DataFrame:
@@ -54,12 +60,13 @@ def to_frame(rows: list[dict], cid: str) -> pd.DataFrame:
     return df.sort_values("ts").reset_index(drop=True)
 
 
-def main(limit: int | None = None):
+def main(limit: int | None = None, stride: int = 1, rem: int = 0):
     uni = pd.read_parquet(DATA_DIR / "universe.parquet").drop_duplicates("condition_id")
     have_tape = {f.stem for f in (DATA_DIR / "trades").glob("*.parquet")}
     uni = uni[uni["condition_id"].isin(have_tape)].sort_values("volume_usd", ascending=False)
     if limit:
         uni = uni.head(limit)
+    uni = uni.iloc[rem::stride]  # striping for parallel workers
     now = int(time.time())
     done = 0
     for _, r in uni.iterrows():
@@ -84,4 +91,6 @@ def main(limit: int | None = None):
 
 
 if __name__ == "__main__":
-    main(int(sys.argv[1]) if len(sys.argv) > 1 else None)
+    main(int(sys.argv[1]) if len(sys.argv) > 1 else None,
+         int(sys.argv[2]) if len(sys.argv) > 2 else 1,
+         int(sys.argv[3]) if len(sys.argv) > 3 else 0)
