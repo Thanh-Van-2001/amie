@@ -40,3 +40,17 @@ remaining test is the FORWARD data the collectors are accumulating; the only
 candidate worth pre-registering on it, if any, is 72h all-wallet flow
 continuation (H1b sign-flip) with drift-neutralized controls — one test,
 in ~4-6 weeks, and whatever it says is final.
+
+## Pre-cap replication (2026-08-20, per spec_forward.md secondary bar)
+
+Frozen config on 117 markets' pre-cap windows (full-depth tape via
+time-window cursor-walk; windows never touched by any analysis):
+n=5,542, span 1.61y, mean net -8.8 bps, hit 49.3%, boot-t -1.33.
+Negative in both 2025 and 2026; USO (the in-sample driver) -18.4 bps.
+
+**The flow-continuation family is dead.** Fourth consecutive lead to fail on
+fresh data. Per spec_forward.md: no further post-hoc flips. The forward
+logger keeps running for the 2026-10-01 formality at zero cost; the research
+line is closed. What stands: the participant-ecosystem dataset, the audited
+pipeline, and a full-depth tape ingester that removes the 10k cap for any
+future study.
