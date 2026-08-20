@@ -54,3 +54,23 @@ logger keeps running for the 2026-10-01 formality at zero cost; the research
 line is closed. What stands: the participant-ecosystem dataset, the audited
 pipeline, and a full-depth tape ingester that removes the 10k cap for any
 future study.
+
+## Vol study (2026-08-20, spec_vol.md — new data family, one locked run)
+
+n=1,417 dissonance events on BTC-mapped markets (ETH: 0 — no market's first
+mapped instrument is ETH). All three pre-registered bars FAIL:
+
+- H-V1 median-quiet: 0.452 of events below hour-matched median RV (bar >0.50)
+  — the quiet effect does NOT replicate on 1-minute realized vol.
+- H-V2 VRP widening: boot-t -1.50 (bar >= +2.50) — variance risk premium
+  NARROWS after events; DVOL falls at least as fast as realized vol.
+- H-V3 straddle: excess-over-norm boot-t -1.50 (bar >= +2.0). Raw P&L is
+  +7.4 bps/event with 68% hit, but it is BELOW the unconditional norm (i.e.
+  it is the ordinary short-vol premium, not an event edge), and the tail
+  ratio is 11.1 (bar <= 10): one -471 bps event vs +42 bps mean win.
+
+**The volatility route closes too.** The 4h quiet effect measured on hourly
+ETF/crypto bars does not survive on finer data, and where vol IS sellable the
+event adds nothing over always-selling. AMIE's research phase ends here; the
+ecosystem dataset, the audited pipeline, and the full-depth tape ingester are
+what the project keeps.
