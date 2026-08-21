@@ -67,3 +67,29 @@ per day for a new entrant, competing against incumbents quoting hundreds of
 fills per hour. It is not the research programme AMIE was built as, and the
 vision's own categories (geopolitics, fee-free, hence no maker rebate) are the
 worst place to run it.
+
+## 5. Cross-universe comparison (2026-08-21) — sports/crypto NOT trustworthy
+
+Same measurements, three universes, identical settings (15-85c band, 2% share,
+5-minute holds):
+
+| Universe | markets | maker markout | backtest bps/fill | Sharpe | agree? |
+|---|---|---|---|---|---|
+| Geopolitics/macro | 148 | +0.176c (t=+13.0) | +68.6 | 7.46 | YES |
+| Crypto | 32 | +0.164c (t=+5.0) | -11.1 | -0.25 | NO |
+| Sports | 223 | -0.125c (t=-1.6) | +520.5 | 2.95 | NO |
+
+Both alternative universes are internally contradictory: two independent
+measurements of the same edge on the same data disagree in sign. Additional
+red flags on the sports result:
+
+- Top 10 markets = 55% of P&L; only 54% of markets positive.
+- Implied 4.3% per fill vs the 1.17% return-on-volume of the verified live
+  operator who earned $12.7M over 409 days. An order-of-magnitude claim.
+- Median sports tape spans 2.6 hours (in-play markets) and is capped to the
+  busiest window, so a 5-minute hold is not a realistic model there.
+
+**Conclusion: no change to the recommendation.** Geopolitics/macro remains the
+only universe where the two measurements agree, and it is the universe the
+mandate points at anyway. Testing sports/crypto properly would require
+order-book data and a fill model built for in-play markets - not a tape replay.
