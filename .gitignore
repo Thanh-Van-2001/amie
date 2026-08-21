@@ -5,3 +5,4 @@ __pycache__/
 .env*
 *.parquet
 SPRINT_LOG.md
+mm/poly-maker/
